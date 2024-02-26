@@ -7,8 +7,8 @@ const handleCastErrorDB = err => {
 }
 
 const handleMongoErrorDB = err => {
-   
-    const message = `Duplicated id : ${err.keyValue.name}`
+    
+    const message = `Duplicated email : ${err.keyValue.email}`
     return new AppError(message,400);
 }
 
