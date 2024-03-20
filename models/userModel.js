@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const crypto = require ('crypto');
 const userSchema = new mongoose.Schema({
     name : {
         type: String,
@@ -68,9 +69,18 @@ gender: {
 dateOfBirth: {
   type: Date
 
-}
+},
+role : {
+  type : String,
+  enum : ['user','admin'],
+  default : 'user'
+},
+passwordChangedAt : Date,
+passwordResetToken: String,
+passwordResetExpires : Date
     
 });
+
 
 userSchema.pre('save',async function(next) {
   //only run this func if pass is modified
@@ -83,6 +93,42 @@ userSchema.pre('save',async function(next) {
   next();
 
 })
+
+
+userSchema.pre('save',async function(next) {
+  //only run this func if pass is modified
+  if(!this.isModified('password') || this.isNew){
+    return next();
+  }
+
+  this.passwordChangedAt = Date.now() - 1000;
+  
+  next();
+
+})
+
+
+//it returns true if user changed his password after the token has been released
+userSchema.methods.changedPassAfter = function (JWTTimestamp){
+  if(this.passwordChangedAt){
+    const changedTimeStamp = parseInt(this.passwordChangedAt.getTime()/1000,10);
+   // console.log(changedTimeStamp,JWTTimestamp)
+   if(changedTimeStamp>JWTTimestamp){
+    return true;
+   }
+  }
+
+return false;}
+
+
+userSchema.methods.passwordReset = function (){
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  this.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex')
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+
+console.log(resetToken,this.passwordResetToken);
+  return resetToken;
+}
 
 const User = mongoose.model('User',userSchema);
 

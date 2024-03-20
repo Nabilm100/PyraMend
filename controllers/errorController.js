@@ -7,8 +7,8 @@ const handleCastErrorDB = err => {
 }
 
 const handleMongoErrorDB = err => {
-    
-    const message = `Duplicated email : ${err.keyValue.email}`
+   
+    const message = `Duplicated id : ${err.keyValue.name}`
     return new AppError(message,400);
 }
 
@@ -18,9 +18,11 @@ const handleValidationErrorDB = err => {
     return new AppError(message,400);
 }
 
-const handleJWTError = () => new AppError('Invalid token , Please log in again!',401)
+const handleJwtError = () => new AppError("Invalid token ! Please login again" , 401)
 
-const handleJWTExpireError = () => new AppError('Your token has expired , Please log in again!',401)
+const handleExpiredTokenError = () => new AppError("Your token expired ! please login again " , 401)
+
+
 
 
 
@@ -68,11 +70,11 @@ module.exports = (err, req, res, next) => {
            
             err = handleValidationErrorDB(err);
         }
-        else if(err.name==='JsonWebTokenError'){
-            err = handleJWTError()
+        else if (err.name === "JsonWebTokenError"){
+            err = handleJwtError()
         }
-        else if(err.name==='TokenExpiredError'){
-            err = handleJWTExpireError();
+        else if( err.name === "TokenExpiredError"){
+            err = handleExpiredTokenError()
         }
         sendErrorProd(err,res);
         
@@ -80,3 +82,4 @@ module.exports = (err, req, res, next) => {
 
    
 };
+
