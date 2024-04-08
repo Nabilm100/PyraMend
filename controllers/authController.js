@@ -110,56 +110,7 @@ exports.getAllUsers = catchAsync(async(req,res,next) =>{
 
   }
 
-  /*exports.forgotPassword = catchAsync(async(req,res,next) =>{
-//get user posted based on certain email
-    const user = await User.findOne({email : req.body.email});
-    if(!user){
-        return next(new AppError('There is no user with this email address',404))
-    }
-
-    //generate reset token
-   const resetToken = user.passwordReset()
-  await user.save({validateBeforeSave : false});
-
-   
-
-    const resetUrl = `${req.protocol}://${req.get('host')}/api/users/resetPassword/${resetToken}`;
-
   
-
-    const message = `Forgot your password? submit a patch request with your new password and password confirm to : ${resetUrl}`;
-
-   
-try{
-    await senddEmail({
-        email : user.email,
-        subject: "your password reset is available for 10 mins",
-        message
-
-    })
-
-res.status(200).json({
-    status: 'success',
-    message: 'Token sent to email'})
-
-}catch(err){
-    user.passwordResetToken = undefined
-    user.passwordResetExpires  = undefined
-    await user.save({validateBeforeSave : false});
-    console.log(err)
-    return next(new AppError('There is error with sending email try again later!',500))
-}
-
-
-
-
- 
-
-
-
-    next();
-
-  });*/
 
 
 
@@ -252,11 +203,78 @@ const token = signToken(user.id);
     });
 
 
-
-
-
-
 });
+
+
+exports.updatePassword = catchAsync(async (req,res,next) => {
+    //get user from collection
+
+const user = await User.findById(req.user.id).select('+password');
+
+
+    //check if password posted is correct
+if(! await bcrypt.compare(req.body.passwordCurrent, user.password)){
+    return next(new AppError('Incorrect Password',400))
+}
+
+  //if so update password
+user.password = req.body.password;
+user.confirmPassword = req.body.confirmPassword
+await user.save();
+
+
+
+
+
+    //log user in , send JWT
+    const token = signToken(user.id);
+    res.status(201).json({
+        status: 'success',
+        token,
+        data:user
+       
+    });
+
+})
+
+
+
+exports.updateData = catchAsync(async (req, res, next) => {
+    // Get user ID from request
+    const userId = req.user.id;
+
+    // Define an array of allowed fields to be updated
+    const allowedFields = ['age', 'height', 'weight', 'activityLevel', 'email', 'goal','name'];
+
+    // Extract only allowed fields from request body
+    const updates = {};
+    allowedFields.forEach(field => {
+        if (req.body[field] !== undefined) {
+            updates[field] = req.body[field];
+        }
+    });
+
+    try {
+        // Update user data using findByIdAndUpdate
+        const user = await User.findByIdAndUpdate(userId, updates, {
+            new: true, // Return the updated document
+            runValidators: true // Run validators to ensure updated data meets schema requirements
+        });
+
+       
+
+        // Respond with success message and updated user data
+        res.status(200).json({
+            status: 'success',
+            data: user
+        });
+    } catch (error) {
+        // Handle any errors
+        return next(error);
+    }
+});
+
+
 
 
 

@@ -61,6 +61,8 @@ app.get("/",(req, res, next) => {
  })
 
 app.use('/api/users',userRoute)
+//adding Medicine route
+app.use("/api/medicine", require("./routes/medicineRoute"));
 
 app.all('*',(req,res,next)=>{
  
@@ -89,5 +91,5 @@ const server = app.listen(PORT, () => {
 
   
   
-//t
+
 
