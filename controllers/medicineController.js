@@ -51,8 +51,13 @@ const updateMedicine = async (req, res) => {
   try {
     // Check if the medicine exists
     const existingMedicine = await Medicine.findOne({ medName });
-    if (!existingMedicine || ! (existingMedicine.userId===req.user._id))
+    
+
+    if (!existingMedicine || existingMedicine.userId.toString() !== req.user._id.toString())
       return res.status(400).json({ message: "This medicine isn't stored." });
+
+
+      
 
     // Update the medicine fields if provided in the request body
     if (Dose) existingMedicine.Dose = Dose;
@@ -78,7 +83,7 @@ const deleteMedicine = async (req, res) => {
   //to check if the medName to be deleted is already in the db
   const existingMedicine = await Medicine.findOne({ medName });
   console.log(existingMedicine);
-  if (!existingMedicine || ! (existingMedicine.userId===req.user._id))
+  if (!existingMedicine || existingMedicine.userId.toString() !== req.user._id.toString())
     return res.status(400).json({ message: "This medicine isn't stored." });
   const deletedMedicine = await Medicine.deleteOne({ medName });
   console.log(deletedMedicine);

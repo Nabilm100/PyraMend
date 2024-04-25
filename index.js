@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const userRoute = require('./routes/userRoute');
 const AppError = require('./utils/AppError');
 const globalErrorHandler = require('./controllers/errorController');
+//const { configuration,openAiApi } = require('openai');
 const app = express();
 app.use(bodyParser.json());
 
@@ -15,6 +16,8 @@ process.on('uncaughtException',err => {
         process.exit(1);
     
   })
+
+
 
 //--------------------
 // Import the dotenv library
@@ -43,6 +46,17 @@ mongoose.connect(DB, { useNewUrlParser: true, useCreateIndex:true , useFindAndMo
     console.log(con.connections)
     console.log("DB succesfull")});
 
+    //---------------------------------
+    app.use(async(req,res,next)=>{
+        await res.header('Access-Control-Allow-Origin','*');
+        await res.header('Access-Control-Allow-Headers','*');
+        await res.header('Access-Control-Allow-Private-Network','true');
+        await res.header('Access-Control-Allow-Methods','*');
+        console.log('Origin work');
+        next()
+
+    })
+    //--------------------------------
 
 
 app.use((req,res,next)=>{
@@ -63,12 +77,7 @@ app.get("/",(req, res, next) => {
 app.use('/api/users',userRoute)
 //adding Medicine route
 app.use("/api/medicine", require("./routes/medicineRoute"));
-
-app.all('*',(req,res,next)=>{
- 
-
-    next(new AppError(`cannot find ${req.originalUrl} on this server`,404));
-})
+//app.use("/api/meal", require("./routes/mealRoute"));
 
 
 app.use(globalErrorHandler);
