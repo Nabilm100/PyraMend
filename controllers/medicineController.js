@@ -17,9 +17,9 @@ const handleNewMedicine = async (req, res) => {
       });
 
   // check for duplicate medicine names in the db
-  const duplicate = await Medicine.findOne({ medName: medName });
+ // const duplicate = await Medicine.findOne({ medName: medName });
   //console.log(duplicate);
-  if (duplicate) return res.json({ duplicate: `${medName} already exsists  ` }); //Conflict
+ // if (duplicate) return res.json({ duplicate: `${medName} already exsists  ` }); 
   //console.log(req.user);
   try {
     //create and store the new medcine
@@ -50,7 +50,7 @@ const updateMedicine = async (req, res) => {
   const { medName, Dose, Date, pillsDuration } = req.body;
   try {
     // Check if the medicine exists
-    const existingMedicine = await Medicine.findOne({ medName });
+    const existingMedicine = await Medicine.findOne({ medName, userId: req.user._id });
     
 
     if (!existingMedicine || existingMedicine.userId.toString() !== req.user._id.toString())
@@ -81,7 +81,7 @@ const updateMedicine = async (req, res) => {
 const deleteMedicine = async (req, res) => {
   const { medName } = req.body;
   //to check if the medName to be deleted is already in the db
-  const existingMedicine = await Medicine.findOne({ medName });
+  const existingMedicine = await Medicine.findOne({ medName, userId:req.user._id });
   console.log(existingMedicine);
   if (!existingMedicine || existingMedicine.userId.toString() !== req.user._id.toString())
     return res.status(400).json({ message: "This medicine isn't stored." });

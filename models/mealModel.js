@@ -1,15 +1,24 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const medicineSchema = new Schema({
-  medName: {
+const mealSchema = new Schema({
+  mealName: {
+    type: String,
+    required: true,
+    
+  },
+  mealType: {
+    type: String,
+    enum: ["Breakfast", "Lunch", "Dinner", "Snack"],
+    required: true,
+  },
+  description: {
     type: String,
     required: true,
   },
-  Dose: {
+  calories: {
     type: Number,
     required: true,
-    integer: true,
   },
   Date: {
     type: Date,
@@ -21,17 +30,9 @@ const medicineSchema = new Schema({
       message: "Date cannot be in the past.",
     }
   },
-  pillsDuration: {
-    type: String,
-    enum: ["BeforeEating", "AfterEating"],
-    required: true,
-  },
-  Notification: {
-    type: String,
-  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
 });
-module.exports = mongoose.model("Medicine", medicineSchema);
+module.exports = mongoose.model("Meal", mealSchema);

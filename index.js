@@ -5,6 +5,8 @@ const bodyParser = require('body-parser');
 const userRoute = require('./routes/userRoute');
 const AppError = require('./utils/AppError');
 const globalErrorHandler = require('./controllers/errorController');
+const axios = require('axios');
+const cheerio = require('cheerio');
 //const { configuration,openAiApi } = require('openai');
 const app = express();
 app.use(bodyParser.json());
@@ -73,11 +75,16 @@ app.use((req,res,next)=>{
 app.get("/",(req, res, next) => {
     return res.status(200).json({message:"Welcome to PyraMend"});
  })
-
+//adding users route
 app.use('/api/users',userRoute)
 //adding Medicine route
 app.use("/api/medicine", require("./routes/medicineRoute"));
-//app.use("/api/meal", require("./routes/mealRoute"));
+//adding Meal route
+app.use("/api/meal", require("./routes/mealRoute"));
+//adding water route
+app.use("/api/water", require("./routes/waterRoute"));
+
+
 
 
 app.use(globalErrorHandler);
