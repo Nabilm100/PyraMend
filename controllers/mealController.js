@@ -218,8 +218,18 @@ async function fetchNutritionData(mealName) {
 const recommendMeals = async (req, res) => {
   try {
       const { preferences } = req.body; 
-      const preferencesArray = Array.isArray(preferences) ? preferences : [preferences]; // Convert to array if not already one
+          const preferencesArray = [];
 
+    // Check if preferences is an array
+    if (Array.isArray(preferences)) {
+        // If preferences is already an array, push its items into preferencesArray
+        preferencesArray.push(...preferences);
+    } else {
+        // If preferences is not an array (e.g., a single string), push it directly into preferencesArray
+        preferencesArray.push(preferences);
+    }
+      
+      console.log("preferenceArray : " , preferencesArray)
       // Calculate Total Daily Calories for our user based on his goal
       const user = await User.findById(req.user.id);
       const TDEE = caloriesGoalCalculate(user);
