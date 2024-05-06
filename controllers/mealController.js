@@ -230,6 +230,7 @@ const recommendMeals = async (req, res) => {
     }
       
       console.log("preferenceArray : " , preferencesArray)
+      console.log("preferences : " , preferences)
       // Calculate Total Daily Calories for our user based on his goal
       const user = await User.findById(req.user.id);
       const TDEE = caloriesGoalCalculate(user);
