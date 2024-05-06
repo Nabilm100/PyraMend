@@ -218,6 +218,7 @@ async function fetchNutritionData(mealName) {
 const recommendMeals = async (req, res) => {
   try {
       const { preferences } = req.body; 
+      const preferencesArray = Array.isArray(preferences) ? preferences : [preferences]; // Convert to array if not already one
 
       // Calculate Total Daily Calories for our user based on his goal
       const user = await User.findById(req.user.id);
@@ -232,7 +233,7 @@ const recommendMeals = async (req, res) => {
       const limitt = 5 - allPreferencesMeals.length;
 
       
-      for (const preference of preferences) {
+      for (const preference of preferencesArray) {
           const meals = await Food.find({ tags: preference }).limit(limitt).exec();
           recommendedMeals = recommendedMeals.concat(meals);
       }
