@@ -2,8 +2,46 @@ const Meal = require("../models/mealModel");
 const User = require("../models/userModel");
 const AppError = require("../utils/AppError");
 const catchAsync = require("../utils/catchAsync");
-const Nutrition = require("../models/nutritionModel")
-// Controller function to add meal details
+const Food = require('../models/foodModel');
+const axios = require('axios');
+
+
+
+
+let activityFactorCalculate = (activityLevel) => {
+  let activityFactor = 1.2
+  if(activityLevel === 'lightly active'){
+    activityFactor = 1.375
+  } else if(activityLevel === 'moderately active'){
+    activityFactor = 1.55
+  }else if(activityLevel === 'very active'){
+    activityFactor = 1.75
+
+  }else if(activityLevel === 'very active'){
+    activityFactor = 2.0
+  }
+  return activityFactor
+
+}
+
+
+let caloriesGoalCalculate = (user) => {
+  let activityFactor = activityFactorCalculate(user.activityLevel);
+    let BMR = 88.362+(13.397*user.weight) + (4.799*user.height) - (5.677*user.age)
+    let TDEE = BMR * activityFactor;
+    if(user.goal==='lose weight'){
+      TDEE = TDEE - 350;
+
+    }else if (user.goal==='gain weight'){
+      TDEE = TDEE + 350
+    }
+    TDEE = parseInt(TDEE);
+    return TDEE
+}
+
+
+// Controller function to add meal detail
+
 const handleNewMeal = async (req, res) => {
   const { mealName, mealType, description, calories, Date } = req.body;
   // console.log(req.user._id);
@@ -102,6 +140,12 @@ const getMeals = async (req, res, next) => {
       });
     }
 
+    const user = await User.findById(req.user.id)
+    const TDEE = caloriesGoalCalculate(user)
+  
+
+   
+
     // Calculate total calories
     let totalCalories = 0;
     meals.forEach((meal) => {
@@ -111,7 +155,8 @@ const getMeals = async (req, res, next) => {
     res.status(201).json({
       status: "success",
       result: meals.length,
-      totalCalories, // Include total calories in the response
+      totalMealsCalories: totalCalories,
+      totalneedCalories: TDEE, 
       data: meals,
     });
   } catch (err) {
@@ -124,52 +169,121 @@ const getMeals = async (req, res, next) => {
 
 
 //------------------ADD MEAL TO DATABASE(nutritionModel) BY AN ADMIN----------------------------
-const newDatabaseMeal = async (req, res) => {
-    const { mealName, description, calories, protien, carbs, fat, sugar } = req.body;
-   
-    // check for duplicate meal names in the db
-    const duplicate = await Nutrition.findOne({ mealName: mealName });
-    //console.log(duplicate);
-    if (duplicate)
-      return res.json({ duplicate: `${mealName} already exsists  ` }); //Conflict
-    //console.log(req.user);
-    try {
-      //create and store the new meal
-      const result = await Nutrition.create({
-        mealName: mealName,
-        description: description,
-        calories: calories,
-        protien: protien,
-        carbs: carbs,
-        fat: fat,
-        sugar: sugar
-       
+// Controller function to save JSON data to the Food model
+const createFood = async (req, res) => {
+  try {
+    // Extract data from the request body
+    const { id, name, description, ingredients, ingredients_raw, steps, servings, serving_size, tags } = req.body;
+
+    // Create a new Food document
+    const newFood = new Food({
+      id,
+      name,
+      description,
+      ingredients,
+      ingredients_raw,
+      steps,
+      servings,
+      serving_size,
+      tags
+    });
+
+    // Save the Food document to the database
+    await newFood.save();
+
+    res.status(201).json({ success: true, message: 'Food created successfully' });
+  } catch (error) {
+    console.error('Error creating food:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// Function to fetch nutrition data from CalorieNinjas API for a given meal name
+async function fetchNutritionData(mealName) {
+  try {
+      const response = await axios.get(`https://api.calorieninjas.com/v1/nutrition?query=${encodeURIComponent(mealName)}`, {
+          headers: {
+              'X-Api-Key': '3MOYSBPdjWgwkoXu2whVZA==jYe3PJ3ZlRudRRVE' // Replace 'YOUR_API_KEY' with your actual API key
+          }
       });
-  
-     // console.log(result);
-  
-      res.status(201).json({
-        status: "Success",
-        message: `The ${mealName} Meal has been added successfully to Database`,
-        data: req.body,
-      });
-    } catch (err) {
-      res.status(500).json({ message: err.message });
-    }
-  };
-
-
-
-
-
-
-//------------------RECOMMEND MEALS----------------------------
-const recommendMeals = async(req,res) => {
-res.status(201).json({
-    status: "Success",
-    message: `This feature is still under working...`
-})
+      return response.data;
+  } catch (error) {
+      console.error('Error fetching nutrition data:', error);
+      return null;
+  }
 }
 
 
-module.exports = { handleNewMeal, updateMeal, deleteMeal, getMeals, newDatabaseMeal, recommendMeals };
+// Function to recommend meals based on user preferences with nutrition data for each meal
+const recommendMeals = async (req, res) => {
+  try {
+      const { preferences } = req.body; 
+
+      // Calculate Total Daily Calories for our user based on his goal
+      const user = await User.findById(req.user.id);
+      const TDEE = caloriesGoalCalculate(user);
+      const protienNeeded = parseInt(user.weight * 1.8);
+
+
+      const allPreferencesMeals = await Food.find({ tags: { $all: preferences } }).limit(3).exec();
+
+      let recommendedMeals = allPreferencesMeals;
+
+      const limitt = 5 - allPreferencesMeals.length;
+
+      
+      for (const preference of preferences) {
+          const meals = await Food.find({ tags: preference }).limit(limitt).exec();
+          recommendedMeals = recommendedMeals.concat(meals);
+      }
+
+      // Fetch nutrition data for each recommended meal
+      const mealsWithNutrition = [];
+      for (const meal of recommendedMeals) {
+          const nutritionData = await fetchNutritionData(meal.name);
+          if (nutritionData && nutritionData.items.length > 0) {
+              const aggregatedMacros = {
+                  calories: 0,
+                  fat: 0,
+                  protein: 0,
+                  carbohydrates: 0,
+                  fiber: 0,
+                  sugar: 0,
+                  servePer: 0
+                  
+              };
+
+             
+              for (const item of nutritionData.items) {
+                aggregatedMacros.calories += parseInt(item.calories);
+                aggregatedMacros.fat += parseInt(item.fat_total_g);
+                aggregatedMacros.protein += parseInt(item.protein_g);
+                aggregatedMacros.carbohydrates += parseInt(item.carbohydrates_total_g);
+                aggregatedMacros.fiber += parseInt(item.fiber_g);
+                aggregatedMacros.sugar += parseInt(item.sugar_g);
+                aggregatedMacros.servePer += parseInt(item.serving_size_g);
+                
+            }
+
+              // Push the aggregated macros to mealsWithNutrition array
+              const mealWithNutrition = {
+                  ...meal._doc,
+                  macros: aggregatedMacros
+              };
+              mealsWithNutrition.push(mealWithNutrition);
+          } else {
+              // If nutrition data is not available, include the meal without macros
+              mealsWithNutrition.push({ ...meal._doc, macros: {} });
+          }
+      }
+
+      res.status(200).json({ success: true, caloriesForYourGoal: TDEE, protienNeed : protienNeeded, result: mealsWithNutrition.length, data: mealsWithNutrition });
+  } catch (error) {
+      console.error('Error recommending meals:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+
+
+module.exports = { handleNewMeal, updateMeal, deleteMeal, getMeals, recommendMeals, createFood };

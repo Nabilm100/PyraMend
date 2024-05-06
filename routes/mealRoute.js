@@ -1,4 +1,3 @@
-
 const express = require("express");
 const router = express.Router();
 const mealController = require("../controllers/mealController");
@@ -11,6 +10,6 @@ router.route("/addMeal").post(mealController.handleNewMeal);
 router.route("/updateMeal").patch(mealController.updateMeal);
 router.route("/deleteMeal").delete(mealController.deleteMeal);
 router.route("/getMeal").get(mealController.getMeals);
-router.route("/insertMeal").post(authController.restrictTo('admin'),mealController.newDatabaseMeal);
 router.route("/recommendMeals").get(mealController.recommendMeals);
+router.route("/createFood").post(authController.restrictTo('admin'),mealController.createFood);
 module.exports = router;
