@@ -17,7 +17,7 @@ let activityFactorCalculate = (activityLevel) => {
   }else if(activityLevel === 'very active'){
     activityFactor = 1.75
 
-  }else if(activityLevel === 'very active'){
+  }else if(activityLevel === 'extra active'){
     activityFactor = 2.0
   }
   return activityFactor

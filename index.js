@@ -7,6 +7,7 @@ const AppError = require('./utils/AppError');
 const globalErrorHandler = require('./controllers/errorController');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const Medicine = require("./models/medicineModel");
 //const { configuration,openAiApi } = require('openai');
 const app = express();
 app.use(bodyParser.json());
@@ -70,6 +71,8 @@ app.use((req,res,next)=>{
     req.requestTime = new Date().toISOString();
     next();
 })
+
+Medicine.resetTakenValue();
 
 
 app.get("/",(req, res, next) => {

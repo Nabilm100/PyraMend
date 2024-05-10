@@ -2,32 +2,30 @@ const Medicine = require("../models/medicineModel");
 const User = require("../models/userModel");
 const AppError = require("../utils/AppError");
 const catchAsync = require('../utils/catchAsync');
+//---------------------
 
 
 // Controller function to add medicine details
 const handleNewMedicine = async (req, res) => {
-  const { medName, Dose, Date, pillsDuration } = req.body;
-  // console.log(req.user._id);
-  if (!medName || !Dose || !Date || !pillsDuration)
+  const { medName, Dose, pillsDuration, NotificationHour, howLong  } = req.body;
+  
+  if (!medName || !Dose || !pillsDuration || !NotificationHour  || !howLong)
     return res
       .status(400)
       .json({
         message:
-          "medicine name, dose, pillsDuration and the date are required.",
+          "medicine name, dose, pillsDuration , notificationHour and for howLong values are required.",
       });
 
-  // check for duplicate medicine names in the db
- // const duplicate = await Medicine.findOne({ medName: medName });
-  //console.log(duplicate);
- // if (duplicate) return res.json({ duplicate: `${medName} already exsists  ` }); 
-  //console.log(req.user);
+  
   try {
     //create and store the new medcine
     const result = await Medicine.create({
       medName: medName,
       Dose: Dose,
-      Date: Date,
       pillsDuration: pillsDuration,
+      NotificationHour: NotificationHour,
+      howLong: howLong,
       userId: req.user._id,
     });
 
@@ -44,10 +42,38 @@ const handleNewMedicine = async (req, res) => {
 };
 
 
+//----------------------------------
+// Function to delete expired medicines
+async function deleteExpiredMedicines() {
+  try {
+    const expiredMedicines = await Medicine.find({}).exec();
+
+    expiredMedicines.forEach(async (medicine) => {
+      if (medicine.isExpired()) {
+        await Medicine.findByIdAndDelete(medicine._id).exec();
+        console.log(`Medicine '${medicine.medName}' expired and deleted.`);
+      }
+    });
+  } catch (error) {
+    console.error("Error deleting expired medicines:", error);
+  }
+}
+
+
+ // Middleware to delete expired medicines before processing medicines requests
+const deleteExpiredMedicinesMiddleware = async (req, res, next) => {
+  await deleteExpiredMedicines(); 
+  next(); 
+};
+
+
+//------------------
+
+
 
 //update medicine data
 const updateMedicine = async (req, res) => {
-  const { medName, Dose, Date, pillsDuration } = req.body;
+  const { medName, Dose, pillsDuration, NotificationHour, howLong, taken } = req.body;
   try {
     // Check if the medicine exists
     const existingMedicine = await Medicine.findOne({ medName, userId: req.user._id });
@@ -61,8 +87,10 @@ const updateMedicine = async (req, res) => {
 
     // Update the medicine fields if provided in the request body
     if (Dose) existingMedicine.Dose = Dose;
-    if (Date) existingMedicine.Date = Date;
     if (pillsDuration) existingMedicine.pillsDuration = pillsDuration;
+    if(NotificationHour) existingMedicine.NotificationHour = NotificationHour;
+    if(howLong) existingMedicine.howLong = howLong;
+    if(taken) existingMedicine.taken = taken
 
     // Save the updated medicine
     await existingMedicine.save();
@@ -123,6 +151,4 @@ const getMedicines = async (req, res, next) => {
 }
 
 
-
-
-module.exports = { handleNewMedicine, updateMedicine, deleteMedicine, getMedicines };
+module.exports = { handleNewMedicine, updateMedicine, deleteMedicine, getMedicines, deleteExpiredMedicinesMiddleware };
