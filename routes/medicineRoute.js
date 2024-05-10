@@ -11,4 +11,5 @@ router.route("/addMedicine").post(medicineController.handleNewMedicine);
 router.route("/updateMedicine").patch(medicineController.updateMedicine);
 router.route("/deleteMedicine").delete(medicineController.deleteMedicine);
 router.route("/getMedicine").get(medicineController.getMedicines);
+router.route("/missedMedicines").get(medicineController.getMedNames);
 module.exports = router;

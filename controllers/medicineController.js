@@ -151,4 +151,45 @@ const getMedicines = async (req, res, next) => {
 }
 
 
-module.exports = { handleNewMedicine, updateMedicine, deleteMedicine, getMedicines, deleteExpiredMedicinesMiddleware };
+
+//--------------------------------
+
+const getMedNames = async (req, res) => {
+  try {
+    const now = new Date();
+    const currentHour = now.getHours();
+   // const currentHour = now.toLocaleTimeString('en-US', {hour12: false, hour: '2-digit', minute: '2-digit'});
+
+
+    
+
+    // Fetch medicines for the logged-in user where taken is false and NotificationHour has passed
+    const medicines = await Medicine.find({
+      userId: req.user._id,
+      taken: false,
+      NotificationHour: { $lt: (currentHour ).toString().padStart(2, '0') + ":00" }
+      
+    });
+    
+
+    // Extract medNames from the filtered medicines
+    const medNames = medicines.map(medicine => medicine.medName);
+
+    
+    
+
+    // Send the medNames as a response
+   res.json({ medNames });
+  } catch (error) {
+    // Handle errors
+    console.error("Error fetching medNames:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+
+
+
+
+module.exports = { handleNewMedicine, updateMedicine, deleteMedicine, getMedicines, deleteExpiredMedicinesMiddleware, getMedNames };

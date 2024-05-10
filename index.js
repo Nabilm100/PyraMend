@@ -8,6 +8,8 @@ const globalErrorHandler = require('./controllers/errorController');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const Medicine = require("./models/medicineModel");
+
+
 //const { configuration,openAiApi } = require('openai');
 const app = express();
 app.use(bodyParser.json());
@@ -66,11 +68,14 @@ app.use((req,res,next)=>{
     console.log('hello from middleware');
     next();
 })
-   
+
 app.use((req,res,next)=>{
     req.requestTime = new Date().toISOString();
     next();
 })
+
+//const currentHour = moment().format("HH:mm");
+
 
 Medicine.resetTakenValue();
 
