@@ -153,7 +153,7 @@ const getMedicines = async (req, res, next) => {
 
 
 //--------------------------------
-
+/*
 const getMedNames = async (req, res) => {
   try {
     const now = new Date();
@@ -167,7 +167,7 @@ const getMedNames = async (req, res) => {
     const medicines = await Medicine.find({
       userId: req.user._id,
       taken: false,
-      NotificationHour: { $lt: (currentHour ).toString().padStart(2, '0') + ":00" }
+     // NotificationHour: { $lt: currentHour }
       
     });
     
@@ -180,6 +180,56 @@ const getMedNames = async (req, res) => {
 
     // Send the medNames as a response
    res.json({ medNames });
+  } catch (error) {
+    // Handle errors
+    console.error("Error fetching medNames:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+*/
+
+
+const getMedNames = async (req, res) => {
+  try {
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // Fetch medicines for the logged-in user where taken is false
+    const medicines = await Medicine.find({
+      userId: req.user._id,
+      taken: false
+    });
+
+    // Filter medicines where the NotificationHour has passed
+    const filteredMedicines = [];
+    medicines.forEach(medicine => {
+      // Check if NotificationHour is defined
+      if (medicine.NotificationHour) {
+        // Extract the hour part from the notification hour string and convert it to an integer
+        const notificationHour = parseInt(medicine.NotificationHour.split(':')[0]);
+        if (notificationHour < currentHour) {
+          console.log('notifyHour ',notificationHour)
+          console.log('currentHour ',currentHour)
+          filteredMedicines.push(medicine);
+        }
+      }
+    });
+
+    // Extract medNames from the filtered medicines
+    const medNames = filteredMedicines.map(medicine => medicine.medName);
+
+    const TotalMed = await Medicine.find({
+      userId: req.user._id,
+      
+    });
+
+    const totalMissedMedicines = medNames.length;
+    
+    // Calculate the total number of medNames
+    const totalMednumbers = TotalMed.length;
+
+    // Send the medNames and counts as a response
+    res.json({ totalMissedMedicines, totalMednumbers, medNames });
   } catch (error) {
     // Handle errors
     console.error("Error fetching medNames:", error);

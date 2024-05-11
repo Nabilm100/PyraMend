@@ -131,7 +131,7 @@ const Medicine = mongoose.model('Medicine', medicineSchema);
 // Schedule the function to run every 5 minutes
 setInterval(async () => {
   await Medicine.resetTakenValue();
-}, 3 * 60 * 1000); // 5 minutes in milliseconds
+}, 24 * 60 * 60 * 1000); // 5 minutes in milliseconds
 
 module.exports = Medicine;
 
