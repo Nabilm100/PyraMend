@@ -218,10 +218,7 @@ const getMedNames = async (req, res) => {
     // Extract medNames from the filtered medicines
     const medNames = filteredMedicines.map(medicine => medicine.medName);
 
-    const TotalMed = await Medicine.find({
-      userId: req.user._id,
-      
-    });
+    const TotalMed = await Medicine.find({userId: req.user._id,});
 
     const totalMissedMedicines = medNames.length;
     

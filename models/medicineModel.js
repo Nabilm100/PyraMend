@@ -82,14 +82,14 @@ medicineSchema.statics.resetTakenValue = function() {
 
 
 
-/*
+
 medicineSchema.statics.resetTakenValue = function() {
   const Medicine = this; // Access the Medicine model using 'this'
 
   const now = new Date();
   let targetTime = new Date(now);
-  targetTime.setHours(0); // Setting the target hour to 10 (10:00 PM)
-  targetTime.setMinutes(0); // Setting the target minutes to 36
+  targetTime.setHours(1); // Setting the target hour to 10 (10:00 PM)
+  targetTime.setMinutes(15); // Setting the target minutes to 36
   //targetTime.setHours(23, 5, 0, 0);
 
   // If the current time is after the target time, schedule the function for the next day
@@ -111,11 +111,11 @@ medicineSchema.statics.resetTakenValue = function() {
     });
   }, timeUntilTargetTime);
 };
-*/
+
 
 
 // Create a method to update 'taken' field to false every 5 minutes
-medicineSchema.statics.resetTakenValue = async function () {
+/*medicineSchema.statics.resetTakenValue = async function () {
   
   try {
     // Update 'taken' field to false for all documents where 'taken' is true
@@ -133,7 +133,7 @@ setInterval(async () => {
   await Medicine.resetTakenValue();
 }, 24 * 60 * 60 * 1000); // 5 minutes in milliseconds
 
-module.exports = Medicine;
+module.exports = Medicine; */
 
 // Schedule the update to run every 5 minutes
 /*
@@ -146,4 +146,4 @@ setInterval(async () => {
 
 module.exports = mongoose.model("Medicine", medicineSchema);*/
 
-
+module.exports = mongoose.model("Medicine", medicineSchema);
