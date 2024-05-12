@@ -8,7 +8,7 @@ const globalErrorHandler = require('./controllers/errorController');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const Medicine = require("./models/medicineModel");
-
+const schedule = require('node-schedule');
 
 //const { configuration,openAiApi } = require('openai');
 const app = express();
@@ -49,7 +49,10 @@ const DB = 'mongodb+srv://PyraMend777:yRujjvJ2gzREeCJH@cluster0.aqhpccv.mongodb.
 
 mongoose.connect(DB, { useNewUrlParser: true, useCreateIndex:true , useFindAndModify:false, useUnifiedTopology: true }).then(con => {
     console.log(con.connections)
-    console.log("DB succesfull")});
+    console.log("DB succesfull")
+    
+    
+});
 
     //---------------------------------
     app.use(async(req,res,next)=>{
@@ -74,10 +77,31 @@ app.use((req,res,next)=>{
     next();
 })
 
-//const currentHour = moment().format("HH:mm");
 
 
-Medicine.resetTakenValue();
+ 
+/*
+
+async function sendRequest() {
+    try {
+        const response = await axios.get('https://pyramend.onrender.com');
+        console.log('Request sent:', response.status);
+    } catch (error) {
+        console.error('Error sending request:', error.message);
+    }
+}
+*/
+
+
+//const job = schedule.scheduleJob('*/20 * * * * *', function() { console.log('Sending request...');sendRequest();});
+
+const job = schedule.scheduleJob('0 1 * * *', function() {
+   
+    Medicine.resetTakenValue();
+  }); 
+
+
+  
 
 
 app.get("/",(req, res, next) => {

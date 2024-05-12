@@ -47,7 +47,7 @@ const handleNewMedicine = async (req, res) => {
 async function deleteExpiredMedicines() {
   try {
     const expiredMedicines = await Medicine.find({}).exec();
-
+    
     expiredMedicines.forEach(async (medicine) => {
       if (medicine.isExpired()) {
         await Medicine.findByIdAndDelete(medicine._id).exec();
@@ -239,4 +239,4 @@ const getMedNames = async (req, res) => {
 
 
 
-module.exports = { handleNewMedicine, updateMedicine, deleteMedicine, getMedicines, deleteExpiredMedicinesMiddleware, getMedNames };
+module.exports = { handleNewMedicine, updateMedicine, deleteMedicine, getMedicines, deleteExpiredMedicinesMiddleware, getMedNames  };

@@ -47,12 +47,39 @@ const medicineSchema = new Schema({
 });
 
 
-// Add a method to check if the medicine has expired
+// Add a method to check if the medicine has expired after (howLong) value
 medicineSchema.methods.isExpired = function() {
   const expirationDate = new Date(this.createdAt);
   expirationDate.setDate(expirationDate.getDate() + this.howLong);
   return expirationDate < Date.now();
 };
+
+
+
+medicineSchema.statics.resetTakenValue = function() {
+  const Medicine = this; 
+
+  
+  
+    Medicine.updateMany({}, { $set: { taken: false } }, function(err, res) {
+      if (err) {
+        console.error("Error resetting taken value:", err);
+      } else {
+        console.log("Taken values reset successfully at 01:00 AM.");
+      }
+    });
+  
+
+  
+};
+
+
+
+const Medicine = mongoose.model('Medicine', medicineSchema);
+
+module.exports = Medicine;
+
+
 
 /*
 medicineSchema.statics.resetTakenValue = function() {
@@ -82,7 +109,7 @@ medicineSchema.statics.resetTakenValue = function() {
 
 
 
-
+/*
 medicineSchema.statics.resetTakenValue = function() {
   const Medicine = this; // Access the Medicine model using 'this'
 
@@ -112,38 +139,4 @@ medicineSchema.statics.resetTakenValue = function() {
   }, timeUntilTargetTime);
 };
 
-
-
-// Create a method to update 'taken' field to false every 5 minutes
-/*medicineSchema.statics.resetTakenValue = async function () {
-  
-  try {
-    // Update 'taken' field to false for all documents where 'taken' is true
-    const result = await this.updateMany({ taken: true }, { $set: { taken: false } });
-    console.log(`${result.nModified} documents updated`);
-  } catch (error) {
-    console.error("Error updating 'taken' field:", error);
-  }
-};
-
-const Medicine = mongoose.model('Medicine', medicineSchema);
-
-// Schedule the function to run every 5 minutes
-setInterval(async () => {
-  await Medicine.resetTakenValue();
-}, 24 * 60 * 60 * 1000); // 5 minutes in milliseconds
-
-module.exports = Medicine; */
-
-// Schedule the update to run every 5 minutes
-/*
-setInterval(async () => {
-  const Medicine = this;
-  await Medicine.resetTakenValue();
-}, 1 * 60 * 1000); // 5 minutes in milliseconds
-
-
-
-module.exports = mongoose.model("Medicine", medicineSchema);*/
-
-module.exports = mongoose.model("Medicine", medicineSchema);
+ */
