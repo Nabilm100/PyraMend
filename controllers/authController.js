@@ -2,7 +2,7 @@ const User = require('../models/userModel');
 const apiFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
-const senddEmail = require('../utils/email');
+const sendEmail = require('../utils/email');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require ('crypto');
@@ -10,10 +10,20 @@ const { promisify} = require('util')
 const signToken = id => {
     return jwt.sign({id},process.env.JWT_SECRET,{expiresIn : process.env.JWT_EXPIRES_IN})
 }
-
+/*
 exports.signUp = catchAsync(async(req,res,next) =>{
     const newUser = await User.create(req.body);
     const token = signToken(newUser.id)
+
+   sendingMail({
+        from: "no-reply@example.com",
+        to: `${email}`,
+        subject: "Account Verification Link",
+        text: `Hello, ${userName} Please verify your email by
+              clicking this link :
+              ${req.protocol}://${req.get('host')}/api/users/verify-email/${newUser.id}/${token} `,
+      });
+
 
     res.status(201).json({
         status: 'success',
@@ -24,6 +34,61 @@ exports.signUp = catchAsync(async(req,res,next) =>{
     });
 
 })
+*/
+
+
+const createSendToken = (user, statusCode, res) => {
+    const token = signToken(user._id);
+    res.status(statusCode).json({
+      status: 'success',
+      token,
+      data: {
+        user
+      }
+    });
+  };
+  
+  exports.signUp = catchAsync(async (req, res, next) => {
+    const newUser = await User.create(req.body);
+  
+    const verificationToken = newUser.createVerificationToken();
+    await newUser.save({ validateBeforeSave: false });
+  
+    const verificationUrl = `${req.protocol}://${req.get('host')}/api/users/verify-email/${verificationToken}`;
+  
+    const message = `Hello, ${newUser.name} Please verify your email by clicking this link: ${verificationUrl}`;
+  
+    await sendEmail({
+      email: newUser.email,
+      subject: 'Account Verification Link',
+      message
+    });
+  
+    res.status(201).json({
+      status: 'success',
+      message: 'Verification email sent to your email address. Please verify your email to complete the registration.'
+    });
+  });
+  
+  exports.verifyEmail = catchAsync(async (req, res, next) => {
+    const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+  
+    const user = await User.findOne({
+      emailVerificationToken: hashedToken,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+  
+    if (!user) {
+      return next(new AppError('Token is invalid or has expired', 400));
+    }
+  
+    user.isVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+  
+    createSendToken(user, 200, res);
+  });
 
 
 
@@ -39,6 +104,8 @@ exports.login = catchAsync(async(req,res,next) =>{
   if(! user || ! await bcrypt.compare(password, user.password) ){
     return next(new AppError('Incorrect email or password',401));
   }
+
+ // if (!user.isVerified) {return next(new AppError('Your email is not verified. Please verify your email to log in.', 401));}
 
    
  const token = signToken(user.id);
@@ -143,7 +210,7 @@ exports.forgotPassword = catchAsync (async (req, res, next) => {
     const message = `Forgot your password? submit a patch request with your new password and password confirm to : ${resetUrl}`;
 
    
-    await senddEmail({
+    await sendEmail({
         email : email,
         subject: "your password reset is available for 10 mins",
         message

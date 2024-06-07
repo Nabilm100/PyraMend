@@ -77,7 +77,13 @@ role : {
 },
 passwordChangedAt : Date,
 passwordResetToken: String,
-passwordResetExpires : Date
+passwordResetExpires : Date,
+isVerified: {
+  type: Boolean,
+  default: false
+},
+emailVerificationToken: String,
+emailVerificationExpires: Date
     
 });
 
@@ -129,6 +135,14 @@ userSchema.methods.passwordReset = function (){
 console.log(resetToken,this.passwordResetToken);
   return resetToken;
 }
+
+userSchema.methods.createVerificationToken = function () {
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  this.emailVerificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+  this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+
+  return verificationToken;
+};
 
 const User = mongoose.model('User',userSchema);
 
