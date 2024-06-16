@@ -8,6 +8,7 @@ const globalErrorHandler = require('./controllers/errorController');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const Medicine = require("./models/medicineModel");
+const Meal = require("./models/mealModel");
 const schedule = require('node-schedule');
 
 //const { configuration,openAiApi } = require('openai');
@@ -98,6 +99,7 @@ async function sendRequest() {
 const job = schedule.scheduleJob('0 1 * * *', function() {
    
     Medicine.resetTakenValue();
+    Meal.resetTakenValue();
   }); 
 
 

@@ -43,9 +43,9 @@ let caloriesGoalCalculate = (user) => {
 // Controller function to add meal detail
 
 const handleNewMeal = async (req, res) => {
-  const { mealName, mealType, description, calories, Date } = req.body;
+  const { mealName, mealType, description, calories, NotificationHour } = req.body;
   // console.log(req.user._id);
-  if (!mealName || !mealType || !description || !calories || !Date)
+  if (!mealName || !mealType || !description || !calories || !NotificationHour)
     return res.status(400).json({
       message: "meal name, type, calories and the date are required.",
     });
@@ -61,7 +61,7 @@ const handleNewMeal = async (req, res) => {
     const result = await Meal.create({
       mealName: mealName,
       mealType: mealType,
-      Date: Date,
+      NotificationHour: NotificationHour,
       description: description,
       calories: calories,
       userId: req.user._id,
@@ -81,7 +81,7 @@ const handleNewMeal = async (req, res) => {
 
 //update Meal data
 const updateMeal = async (req, res) => {
-  const { mealName, mealType, description, calories, Date } = req.body;
+  const { mealName, mealType, description, calories, NotificationHour, taken } = req.body;
   try {
     // Check if the meal exists
     const existingMeal = await Meal.findOne({ mealName, userId: req.user._id });
@@ -94,9 +94,10 @@ const updateMeal = async (req, res) => {
     // Update the Meal fields if provided in the request body
     if (mealName) existingMeal.mealName = mealName;
     if (mealType) existingMeal.mealType = mealType;
-    if (Date) existingMeal.Date = Date;
+    if (NotificationHour) existingMeal.NotificationHour = NotificationHour;
     if(description) existingMeal.description = description
     if(calories) existingMeal.calories = calories
+    if(taken) existingMeal.taken = taken
 
     // Save the updated Meal
     await existingMeal.save();
@@ -165,6 +166,66 @@ const getMeals = async (req, res, next) => {
     );
   }
 };
+
+
+
+//-----------------get missed meals---------------------
+const getMealNames = async (req, res) => {
+  try {
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // Fetch meals for the logged-in user where taken is false
+    const meals = await Meal.find({
+      userId: req.user._id,
+      taken: false
+    });
+
+    const user = await User.findById(req.user.id)
+    const TDEE = caloriesGoalCalculate(user)
+    let totalMissedCalories = 0;
+
+    // Filter meals where the NotificationHour has passed
+    const filteredMeals = [];
+    meals.forEach(meal => {
+      // Check if NotificationHour is defined
+      if (meal.NotificationHour) {
+        // Extract the hour part from the notification hour string and convert it to an integer
+        const notificationHour = parseInt(meal.NotificationHour.split(':')[0]);
+        if (notificationHour < currentHour) {
+          console.log('notifyHour ',notificationHour)
+          console.log('currentHour ',currentHour)
+          filteredMeals.push(meal);
+          totalMissedCalories+=meal.calories
+
+        }
+      }
+    });
+
+    // Extract mealNames from the filtered meals
+    const mealNames = filteredMeals.map(meal => meal.mealName);
+
+    const TotalMeal = await Meal.find({userId: req.user._id,});
+
+    const totalMissedMeals = mealNames.length;
+    
+    // Calculate the total number of mealNames
+    const totalMealsnumbers = TotalMeal.length;
+
+
+    // Send the mealNames and counts as a response
+    res.json({ totalMissedMeals, totalMealsnumbers, mealNames, totalneedCalories: TDEE, totalMissedCalories });
+  } catch (error) {
+    // Handle errors
+    console.error("Error fetching medNames:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+
+
+//--------------------------------------
 
 
 
@@ -298,4 +359,4 @@ const recommendMeals = async (req, res) => {
 
 
 
-module.exports = { handleNewMeal, updateMeal, deleteMeal, getMeals, recommendMeals, createFood };
+module.exports = { handleNewMeal, updateMeal, deleteMeal, getMeals, recommendMeals, createFood, getMealNames };

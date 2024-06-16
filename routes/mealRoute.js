@@ -10,6 +10,7 @@ router.route("/addMeal").post(mealController.handleNewMeal);
 router.route("/updateMeal").patch(mealController.updateMeal);
 router.route("/deleteMeal").delete(mealController.deleteMeal);
 router.route("/getMeal").get(mealController.getMeals);
+router.route("/missedMeals").get(mealController.getMealNames);
 router.route("/recommendMeals").post(mealController.recommendMeals);
 router.route("/createFood").post(authController.restrictTo('admin'),mealController.createFood);
 module.exports = router;
