@@ -45,7 +45,7 @@ let caloriesGoalCalculate = (user) => {
 const handleNewMeal = async (req, res) => {
   const { mealName, mealType, description, calories, NotificationHour } = req.body;
   // console.log(req.user._id);
-  if (!mealName || !mealType || !description || !calories || !NotificationHour)
+  if (!mealName || !mealType || !calories || !NotificationHour)
     return res.status(400).json({
       message: "meal name, type, calories and the date are required.",
     });
