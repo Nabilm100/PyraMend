@@ -117,6 +117,8 @@ app.use("/api/medicine", require("./routes/medicineRoute"));
 app.use("/api/meal", require("./routes/mealRoute"));
 //adding water route
 app.use("/api/water", require("./routes/waterRoute"));
+//adding task route
+app.use("/api/task", require("./routes/taskRoute"));
 
 
 
