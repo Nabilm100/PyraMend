@@ -50,11 +50,7 @@ const handleNewMeal = async (req, res) => {
       message: "meal name, type, calories and the date are required.",
     });
 
-  // check for duplicate meal names in the db
-  const duplicate = await Meal.findOne({ mealName: mealName, userId:req.user._id });
-  //console.log(duplicate);
-  if (duplicate)
-    return res.json({ duplicate: `${mealName} already exsists  ` }); 
+ 
   //console.log(req.user);
   try {
     //create and store the new meal
@@ -291,24 +287,40 @@ const recommendMeals = async (req, res) => {
     }
       
       console.log("preferenceArray : " , preferencesArray)
-      console.log("preferences : " , preferences)
+      
       // Calculate Total Daily Calories for our user based on his goal
       const user = await User.findById(req.user.id);
       const TDEE = caloriesGoalCalculate(user);
       const protienNeeded = parseInt(user.weight * 1.8);
+      let lmt = 7
+      if(preferences.length>1){lmt=lmt-2}
 
 
-      const allPreferencesMeals = await Food.find({ tags: { $all: preferences } }).limit(3).exec();
+      const allPreferencesMeals = await Food.find({ tags: { $all: preferences } }).limit(lmt).exec();
 
       let recommendedMeals = allPreferencesMeals;
+      // Use a Set to track unique food items
+const uniqueMeals = new Set(allPreferencesMeals.map(meal => meal._id.toString()));
 
-      const limitt = 5 - allPreferencesMeals.length;
+      let limitt = 7 - allPreferencesMeals.length;
+      
+      if(limitt===0)
+        limitt=1;
 
       
-      for (const preference of preferencesArray) {
+     /* for (const preference of preferencesArray) {
           const meals = await Food.find({ tags: preference }).limit(limitt).exec();
           recommendedMeals = recommendedMeals.concat(meals);
-      }
+      }*/
+          for (const preference of preferencesArray) {
+            const meals = await Food.find({ tags: preference }).limit(limitt).exec();
+            for (const meal of meals) {
+                if (!uniqueMeals.has(meal._id.toString())) {
+                    uniqueMeals.add(meal._id.toString());
+                    recommendedMeals.push(meal);
+                }
+            }
+        }
 
       // Fetch nutrition data for each recommended meal
       const mealsWithNutrition = [];

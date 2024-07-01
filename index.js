@@ -119,6 +119,11 @@ app.use("/api/meal", require("./routes/mealRoute"));
 app.use("/api/water", require("./routes/waterRoute"));
 //adding task route
 app.use("/api/task", require("./routes/taskRoute"));
+//adding exercise route
+app.use("/api/", require("./routes/exercise.routes"));
+//adding workout route
+app.use("/api/", require("./routes/workout.routes"));
+
 
 
 

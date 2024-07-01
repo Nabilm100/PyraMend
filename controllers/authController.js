@@ -10,31 +10,7 @@ const { promisify} = require('util')
 const signToken = id => {
     return jwt.sign({id},process.env.JWT_SECRET,{expiresIn : process.env.JWT_EXPIRES_IN})
 }
-/*
-exports.signUp = catchAsync(async(req,res,next) =>{
-    const newUser = await User.create(req.body);
-    const token = signToken(newUser.id)
 
-   sendingMail({
-        from: "no-reply@example.com",
-        to: `${email}`,
-        subject: "Account Verification Link",
-        text: `Hello, ${userName} Please verify your email by
-              clicking this link :
-              ${req.protocol}://${req.get('host')}/api/users/verify-email/${newUser.id}/${token} `,
-      });
-
-
-    res.status(201).json({
-        status: 'success',
-        token,
-        data:{
-            user: newUser
-        }
-    });
-
-})
-*/
 
 
 const createSendToken = (user, statusCode, res) => {
