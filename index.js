@@ -81,7 +81,7 @@ app.use((req,res,next)=>{
 
 
  
-/*
+
 
 async function sendRequest() {
     try {
@@ -91,10 +91,10 @@ async function sendRequest() {
         console.error('Error sending request:', error.message);
     }
 }
-*/
 
 
-//const job = schedule.scheduleJob('*/20 * * * * *', function() { console.log('Sending request...');sendRequest();});
+
+const jobwake = schedule.scheduleJob('*/20 * * * * *', function() { console.log('Sending request...');sendRequest();});
 
 const job = schedule.scheduleJob('0 1 * * *', function() {
    
