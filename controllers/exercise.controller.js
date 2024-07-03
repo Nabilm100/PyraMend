@@ -1,5 +1,7 @@
 // exercise.controller.js
 const Exercise = require("../models/exercise.model");
+const DayDistance = require("../models/distanceModel");
+const Activity  = require("../models/minutesModel");
 
 // Controller function to handle creating a new exercise
 async function createExercise(req, res) {
@@ -175,6 +177,131 @@ async function setExerciseRepetitions(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
+
+const calculateDistance = (gender, steps) => {
+  const distancePerStep = gender === 'male' ? 0.78 : 0.7;
+  const distanceInMeters = steps * distancePerStep;
+  const distanceInKilometers = distanceInMeters / 1000; // Convert meters to kilometers
+  return distanceInKilometers;
+};
+
+const createOrUpdateDayDistance = async (req, res) => {
+  try {
+    const { day, gender, steps } = req.body;
+
+    if (!['male', 'female'].includes(gender)) {
+      return res.status(400).send('Invalid gender');
+    }
+
+    if (!['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].includes(day)) {
+      return res.status(400).send('Invalid day');
+    }
+
+    const distance = calculateDistance(gender, steps);
+
+    let dayDistance = await DayDistance.findOne({ day });
+    if (dayDistance) {
+      dayDistance.distance = distance;
+    } else {
+      dayDistance = new DayDistance({ day, distance });
+    }
+
+    await dayDistance.save();
+    res.status(201).json({success:"Steps data sent Succesfully",dayDistance});
+  } catch (error) {
+    res.status(400).json(error.message);
+  }
+};
+
+// Controller to get all day distances
+const getAllDayDistances = async (req, res) => {
+  try {
+    const dayDistances = await DayDistance.find();
+    res.status(200).json({data: dayDistances});
+  } catch (error) {
+    res.status(500).json(error.message);
+  }
+};
+
+const calculateMinutes = (steps, gender, day) => {
+  // Calculate total minutes
+  const totalMinutes = steps * (gender === 'male' ? 0.75 : 0.65); // Adjust for gender, assuming male as 75% and female as 65%
+
+  // Calculate percentages
+  const veryActivePercent = 0.20;
+  const fairlyActivePercent = 0.10;
+  const lightlyActivePercent = 0.30;
+  const sedentaryPercent = 0.40;
+
+  // Calculate minutes for each type
+  const veryActiveMinutes = Math.round(totalMinutes * veryActivePercent);
+  const fairlyActiveMinutes = Math.round(totalMinutes * fairlyActivePercent);
+  const lightlyActiveMinutes = Math.round(totalMinutes * lightlyActivePercent);
+  const sedentaryMinutes = Math.round(totalMinutes * sedentaryPercent);
+
+  return {
+      veryActiveMinutes,
+      fairlyActiveMinutes,
+      lightlyActiveMinutes,
+      sedentaryMinutes
+  };
+};
+
+const createActivity = async (req, res) => {
+  const { steps, gender, day } = req.body;
+
+  try {
+      // Check if activity for the day already exists
+      let activity = await Activity.findOne({ dayOfWeek: day });
+
+      if (activity) {
+          // Update existing activity
+          const { veryActiveMinutes, fairlyActiveMinutes, lightlyActiveMinutes, sedentaryMinutes } = calculateMinutes(steps, gender, day);
+
+          activity.totalSteps = steps;
+          activity.veryActiveMinutes = veryActiveMinutes;
+          activity.fairlyActiveMinutes = fairlyActiveMinutes;
+          activity.lightlyActiveMinutes = lightlyActiveMinutes;
+          activity.sedentaryMinutes = sedentaryMinutes;
+
+          await activity.save();
+
+          res.status(200).json({ message: 'Activity updated successfully', activity });
+      } else {
+          // Create new activity
+          const { veryActiveMinutes, fairlyActiveMinutes, lightlyActiveMinutes, sedentaryMinutes } = calculateMinutes(steps, gender, day);
+
+          const newActivity = new Activity({
+              dayOfWeek: day,
+              totalSteps: steps,
+              veryActiveMinutes,
+              fairlyActiveMinutes,
+              lightlyActiveMinutes,
+              sedentaryMinutes
+          });
+
+          await newActivity.save();
+
+          res.status(201).json({ message: 'Activity recorded successfully', activity: newActivity });
+      }
+  } catch (err) {
+      res.status(500).json({ message: 'Failed to record activity', error: err.message });
+  }
+};
+
+const getAllActivities = async (req, res) => {
+  try {
+      const activities = await Activity.find();
+      res.status(200).json(activities);
+  } catch (err) {
+      res.status(500).json({ message: 'Failed to fetch activities', error: err.message });
+  }
+};
+
+
+
+
+
 module.exports = {
   createExercise,
   getAllExercises,
@@ -188,4 +315,8 @@ module.exports = {
   setExerciseRepetitions,
   getExerciseRepetitions,
   fetchAndSaveExercises,
+  createOrUpdateDayDistance,
+  getAllDayDistances,
+  createActivity,
+  getAllActivities
 };

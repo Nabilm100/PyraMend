@@ -31,6 +31,14 @@ router.put("/exercises/:id/weight", exerciseController.setExerciseWeight);
 router.get("/exercises/:id/repeats", exerciseController.getExerciseRepetitions);
 router.put("/exercises/:id/repeats", exerciseController.setExerciseRepetitions);
 
+//analysis steps to distance in km
+router.post("/dayDistance",exerciseController.createOrUpdateDayDistance);
+router.get("/dayDistance",exerciseController.getAllDayDistances);
+
+//analysis steps to minutes
+router.post("/activity",exerciseController.createActivity);
+router.get("/activity",exerciseController.getAllActivities);
+
 // Route to fetch exercises by body part and save them to the database
 router.get("/exercises/fetch/:bodyPart", async (req, res) => {
   try {
