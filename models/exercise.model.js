@@ -1,12 +1,10 @@
-// model/exercise.model.js
 const mongoose = require("mongoose");
 
 const exerciseSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true, // Ensure uniqueness
-    index: true, // Add index for faster lookups
+    index: true,
   },
   isChosen: {
     type: Boolean,

@@ -2,7 +2,7 @@
 const Exercise = require("../models/exercise.model");
 const DayDistance = require("../models/distanceModel");
 const Activity  = require("../models/minutesModel");
-
+const axios = require('axios');
 // Controller function to handle creating a new exercise
 async function createExercise(req, res) {
   try {
@@ -178,6 +178,8 @@ async function setExerciseRepetitions(req, res) {
   }
 }
 
+//--------------------------------------
+
 const calculateDistance = (gender, steps) => {
   const distancePerStep = gender === 'male' ? 0.78 : 0.7;
   const distanceInMeters = steps * distancePerStep;
@@ -225,13 +227,13 @@ const getAllDayDistances = async (req, res) => {
 
 const calculateMinutes = (steps, gender, day) => {
   // Calculate total minutes
-  const totalMinutes = steps * (gender === 'male' ? 0.75 : 0.65); // Adjust for gender, assuming male as 75% and female as 65%
+  const totalMinutes = steps * (gender === 'male' ? 0.13 : 0.12); // Adjust for gender, assuming male as 75% and female as 65%
 
   // Calculate percentages
-  const veryActivePercent = 0.20;
-  const fairlyActivePercent = 0.10;
-  const lightlyActivePercent = 0.30;
-  const sedentaryPercent = 0.40;
+  const veryActivePercent = 0.05;
+  const fairlyActivePercent = 0.01;
+  const lightlyActivePercent = 0.37;
+  const sedentaryPercent = 0.57;
 
   // Calculate minutes for each type
   const veryActiveMinutes = Math.round(totalMinutes * veryActivePercent);
@@ -298,6 +300,35 @@ const getAllActivities = async (req, res) => {
   }
 };
 
+
+
+//hena y ganna t3mli controller y retrieve el data mn model mt3rf fo2 fi lfile b 2esm (activity) w tb3ti eldata di li api ibrahim 3mlha w trg3i response bt3 api da li hwa calories
+// da structure elcontroller elmfrod (ht7tagi tzbti feh kam haga)
+
+/*
+const sendAllActivitiesToAnotherAPI = async (req, res) => {
+    try {
+        // Fetch all activities from the database
+        const activities = await Activity.find();
+
+        // Define the target API URL
+        const targetApiUrl = 'http://example.com/api/receive-data'; // Replace with the actual target API URL li mdholek ibrahim y ganna
+
+        // Send the data to the target API
+        const response = await axios.post(targetApiUrl, { data: activities });
+
+        // Return the response from the target API to the client
+        res.status(response.status).json(response.data);
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch or send activities', error: err.message });
+    }
+};
+
+//mtnsesh t3mlelo route fi file exercise.route.js
+
+
+
+*/
 
 
 

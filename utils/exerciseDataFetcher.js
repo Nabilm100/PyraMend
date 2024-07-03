@@ -1,19 +1,16 @@
-//utils/exerciseDataFetcher.js
 const axios = require("axios");
 const Exercise = require("../models/exercise.model");
 
 async function fetchExercisesByBodyPart(bodyPart) {
   try {
     // Modify body part based on conditions
-    if (bodyPart.toLowerCase() == "upperlegs") {
-      bodyPart = "upper%20legs";
-    } else if (bodyPart.toLowerCase() == "lowerlegs") {
-      bodyPart = "lower%20legs";
-    } else if (bodyPart.toLowerCase() == "upperarm") {
-      bodyPart = "upper%20arms";
-    } else if (bodyPart.toLowerCase() == "lowerarm") {
-      bodyPart = "lower%20arms";
-    }
+    const bodyPartMapping = {
+      upperlegs: "upper%20legs",
+      lowerlegs: "lower%20legs",
+      upperarm: "upper%20arms",
+      lowerarm: "lower%20arms",
+    };
+    bodyPart = bodyPartMapping[bodyPart.toLowerCase()] || bodyPart;
 
     const response = await axios.get(
       `https://exercisedb.p.rapidapi.com/exercises/bodyPart/${bodyPart}`,
@@ -26,36 +23,42 @@ async function fetchExercisesByBodyPart(bodyPart) {
         },
       }
     );
-    const fetchedExercises = response.data;
-    return fetchedExercises;
+    console.log("Fetched exercises:", response.data); // Log fetched data
+    return response.data;
   } catch (error) {
-    console.error("Failed to fetch exercises:", error);
-    throw new Error("Failed to fetch exercises");
+    console.error(
+      "Failed to fetch exercises from external API:",
+      error.message
+    );
+    throw new Error("Failed to fetch exercises from external API");
   }
 }
 
 async function saveExercisesToDatabase(bodyPart) {
   try {
     const fetchedExercises = await fetchExercisesByBodyPart(bodyPart);
-
-    // Iterate over fetched exercises and save them to the database
     const savedExercises = [];
+
     for (const exerciseData of fetchedExercises) {
-      const exercise = new Exercise({
-        name: exerciseData.name,
-        isFinished: false,
-        sets: 0,
-        repeats: 0,
-        weight: 0,
-        bodyPart: exerciseData.bodyPart,
-        equipment: exerciseData.equipment,
-        gifUrl: exerciseData.gifUrl,
-        target: exerciseData.target,
-        secondaryMuscles: exerciseData.secondaryMuscles,
-        instructions: exerciseData.instructions,
-      });
-      const savedExercise = await exercise.save();
-      savedExercises.push(savedExercise);
+      const exercise = await Exercise.findOneAndUpdate(
+        { name: exerciseData.name },
+        {
+          name: exerciseData.name,
+          isFinished: false,
+          sets: 0,
+          repeats: 0,
+          weight: 0,
+          bodyPart: exerciseData.bodyPart,
+          equipment: exerciseData.equipment,
+          gifUrl: exerciseData.gifUrl,
+          target: exerciseData.target,
+          secondaryMuscles: exerciseData.secondaryMuscles,
+          instructions: exerciseData.instructions,
+        },
+        { new: true, upsert: true } // Create the document if it doesn't exist
+      );
+      console.log("Saved exercise:", exercise); // Log saved exercise
+      savedExercises.push(exercise);
     }
 
     return savedExercises;
