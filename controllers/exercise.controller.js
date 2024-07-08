@@ -1,8 +1,8 @@
 // exercise.controller.js
 const Exercise = require("../models/exercise.model");
 const DayDistance = require("../models/distanceModel");
-const Activity  = require("../models/minutesModel");
-const axios = require('axios');
+const Activity = require("../models/minutesModel");
+const axios = require("axios");
 // Controller function to handle creating a new exercise
 async function createExercise(req, res) {
   try {
@@ -181,7 +181,7 @@ async function setExerciseRepetitions(req, res) {
 //--------------------------------------
 
 const calculateDistance = (gender, steps) => {
-  const distancePerStep = gender === 'male' ? 0.78 : 0.7;
+  const distancePerStep = gender === "male" ? 0.78 : 0.7;
   const distanceInMeters = steps * distancePerStep;
   const distanceInKilometers = distanceInMeters / 1000; // Convert meters to kilometers
   return distanceInKilometers;
@@ -190,26 +190,30 @@ const calculateDistance = (gender, steps) => {
 const createOrUpdateDayDistance = async (req, res) => {
   try {
     const { day, gender, steps } = req.body;
+    const userId = req.user._id; // Assuming userId is available in req.user
 
-    if (!['male', 'female'].includes(gender)) {
-      return res.status(400).send('Invalid gender');
+    if (!["male", "female"].includes(gender)) {
+      return res.status(400).send("Invalid gender");
     }
 
-    if (!['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].includes(day)) {
-      return res.status(400).send('Invalid day');
+    if (!["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].includes(day)) {
+      return res.status(400).send("Invalid day");
     }
 
     const distance = calculateDistance(gender, steps);
 
-    let dayDistance = await DayDistance.findOne({ day });
+    let dayDistance = await DayDistance.findOne({ userId, day });
+
     if (dayDistance) {
       dayDistance.distance = distance;
     } else {
-      dayDistance = new DayDistance({ day, distance });
+      dayDistance = new DayDistance({ userId, day, distance });
     }
 
     await dayDistance.save();
-    res.status(201).json({success:"Steps data sent Succesfully",dayDistance});
+    res
+      .status(201)
+      .json({ success: "Steps data sent successfully", dayDistance });
   } catch (error) {
     res.status(400).json(error.message);
   }
@@ -218,16 +222,17 @@ const createOrUpdateDayDistance = async (req, res) => {
 // Controller to get all day distances
 const getAllDayDistances = async (req, res) => {
   try {
-    const dayDistances = await DayDistance.find();
-    res.status(200).json({data: dayDistances});
+    const userId = req.user._id; // Assuming user ID is available in req.user
+
+    const dayDistances = await DayDistance.find({ userId });
+    res.status(200).json({ data: dayDistances });
   } catch (error) {
     res.status(500).json(error.message);
   }
 };
-
 const calculateMinutes = (steps, gender, day) => {
   // Calculate total minutes
-  const totalMinutes = steps * (gender === 'male' ? 0.13 : 0.12); // Adjust for gender, assuming male as 75% and female as 65%
+  const totalMinutes = steps * (gender === "male" ? 0.13 : 0.12); // Adjust for gender, assuming male as 75% and female as 65%
 
   // Calculate percentages
   const veryActivePercent = 0.05;
@@ -242,96 +247,211 @@ const calculateMinutes = (steps, gender, day) => {
   const sedentaryMinutes = Math.round(totalMinutes * sedentaryPercent);
 
   return {
-      veryActiveMinutes,
-      fairlyActiveMinutes,
-      lightlyActiveMinutes,
-      sedentaryMinutes
+    veryActiveMinutes,
+    fairlyActiveMinutes,
+    lightlyActiveMinutes,
+    sedentaryMinutes,
   };
 };
 
 const createActivity = async (req, res) => {
-  const { steps, gender, day } = req.body;
+  const { steps, gender, dayOfWeek } = req.body;
+  const userId = req.user._id;
+
+  // Validate the presence of required fields
+  if (!steps || !gender || !dayOfWeek) {
+    return res.status(400).json({
+      message: "Invalid input. Please provide steps, gender, and dayOfWeek.",
+    });
+  }
+
+  // Validate that dayOfWeek is one of the valid enum values
+  const validDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  if (!validDays.includes(dayOfWeek)) {
+    return res.status(400).json({
+      message: "Invalid day of the week. Please provide a valid dayOfWeek.",
+    });
+  }
 
   try {
-      // Check if activity for the day already exists
-      let activity = await Activity.findOne({ dayOfWeek: day });
+    // Check if activity for the user and dayOfWeek already exists
+    let activity = await Activity.findOne({ userId, dayOfWeek });
 
-      if (activity) {
-          // Update existing activity
-          const { veryActiveMinutes, fairlyActiveMinutes, lightlyActiveMinutes, sedentaryMinutes } = calculateMinutes(steps, gender, day);
+    if (activity) {
+      // Update existing activity
+      const {
+        veryActiveMinutes,
+        fairlyActiveMinutes,
+        lightlyActiveMinutes,
+        sedentaryMinutes,
+      } = calculateMinutes(steps, gender, dayOfWeek);
 
-          activity.totalSteps = steps;
-          activity.veryActiveMinutes = veryActiveMinutes;
-          activity.fairlyActiveMinutes = fairlyActiveMinutes;
-          activity.lightlyActiveMinutes = lightlyActiveMinutes;
-          activity.sedentaryMinutes = sedentaryMinutes;
+      activity.totalSteps = steps;
+      activity.veryActiveMinutes = veryActiveMinutes;
+      activity.fairlyActiveMinutes = fairlyActiveMinutes;
+      activity.lightlyActiveMinutes = lightlyActiveMinutes;
+      activity.sedentaryMinutes = sedentaryMinutes;
 
-          await activity.save();
+      await activity.save();
 
-          res.status(200).json({ message: 'Activity updated successfully', activity });
-      } else {
-          // Create new activity
-          const { veryActiveMinutes, fairlyActiveMinutes, lightlyActiveMinutes, sedentaryMinutes } = calculateMinutes(steps, gender, day);
+      res
+        .status(200)
+        .json({ message: "Activity updated successfully", activity });
+    } else {
+      // Create new activity
+      const {
+        veryActiveMinutes,
+        fairlyActiveMinutes,
+        lightlyActiveMinutes,
+        sedentaryMinutes,
+      } = calculateMinutes(steps, gender, dayOfWeek);
 
-          const newActivity = new Activity({
-              dayOfWeek: day,
-              totalSteps: steps,
-              veryActiveMinutes,
-              fairlyActiveMinutes,
-              lightlyActiveMinutes,
-              sedentaryMinutes
-          });
+      const newActivity = new Activity({
+        userId,
+        dayOfWeek,
+        totalSteps: steps,
+        veryActiveMinutes,
+        fairlyActiveMinutes,
+        lightlyActiveMinutes,
+        sedentaryMinutes,
+      });
 
-          await newActivity.save();
+      await newActivity.save();
 
-          res.status(201).json({ message: 'Activity recorded successfully', activity: newActivity });
-      }
+      res.status(201).json({
+        message: "Activity recorded successfully",
+        activity: newActivity,
+      });
+    }
   } catch (err) {
-      res.status(500).json({ message: 'Failed to record activity', error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to record activity", error: err.message });
   }
 };
 
 const getAllActivities = async (req, res) => {
+  const userId = req.user._id;
+
   try {
-      const activities = await Activity.find();
-      res.status(200).json(activities);
+    const activities = await Activity.find({ userId });
+    res.status(200).json(activities);
   } catch (err) {
-      res.status(500).json({ message: 'Failed to fetch activities', error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch activities", error: err.message });
   }
 };
 
-
-
-//hena y ganna t3mli controller y retrieve el data mn model mt3rf fo2 fi lfile b 2esm (activity) w tb3ti eldata di li api ibrahim 3mlha w trg3i response bt3 api da li hwa calories
-// da structure elcontroller elmfrod (ht7tagi tzbti feh kam haga)
-
-/*
 const sendAllActivitiesToAnotherAPI = async (req, res) => {
-    try {
-        // Fetch all activities from the database
-        const activities = await Activity.find();
+  const userId = req.user._id;
 
-        // Define the target API URL
-        const targetApiUrl = 'http://example.com/api/receive-data'; // Replace with the actual target API URL li mdholek ibrahim y ganna
+  try {
+    // Fetch all activities from the database for the logged-in user
+    const activities = await Activity.find({ userId });
 
-        // Send the data to the target API
-        const response = await axios.post(targetApiUrl, { data: activities });
+    // Process activities data to match the required format
+    const processedActivities = activities.map((activity) => ({
+      TotalSteps: activity.totalSteps,
+      VeryActiveMinutes: activity.veryActiveMinutes,
+      FairlyActiveMinutes: activity.fairlyActiveMinutes,
+      LightlyActiveMinutes: activity.lightlyActiveMinutes,
+      SedentaryMinutes: activity.sedentaryMinutes,
+    }));
 
-        // Return the response from the target API to the client
-        res.status(response.status).json(response.data);
-    } catch (err) {
-        res.status(500).json({ message: 'Failed to fetch or send activities', error: err.message });
-    }
+    // Log the payload to be sent
+    console.log("Payload to be sent:", processedActivities);
+
+    // Define the target API URL
+    const targetApiUrl = "https://calories.pythonanywhere.com/predict";
+
+    // Array to store activities with calories
+    let activitiesWithCalories = [];
+
+    // Send the data to the target API and capture response
+    for (const activity of processedActivities) {
+      try {
+        const response = await axios.post(targetApiUrl, activity);
+        console.log("Response from the target API:", response.data);
+
+        // Assuming the response contains calories field
+        const calories = response.data.calories; // Adjust according to actual response structure
+
+        // Update the activity object with calories
+        const activityWithCalories = {
+          ...activity,
+          calories: calories,
+        };
+
+        activitiesWithCalories.push(activityWithCalories);
+      } catch (err) {
+        console.error("Error for activity:", activity, err.response.data);
+        res.status(400).json({
+          message: "Failed to fetch or send activities",
+          error: err.response.data,
+        });
+        return;
+      }
+    }
+
+    // Return activities with calories to the client
+    res.status(200).json({ activities: activitiesWithCalories });
+  } catch (err) {
+    console.error("Error sending activities to another API:", err); // Log the error
+    res.status(500).json({
+      message: "Failed to fetch or send activities",
+      error: err.message,
+    });
+  }
 };
+const getCalories = async (req, res) => {
+  const { dayOfWeek } = req.body;
+  const userId = req.user._id;
 
-//mtnsesh t3mlelo route fi file exercise.route.js
+  // Validate the presence of required parameters
+  if (!userId || !dayOfWeek) {
+    return res.status(400).json({
+      message: "Invalid input. Please provide userId and dayOfWeek.",
+    });
+  }
 
+  try {
+    // Find the activity for the user on the specified day
+    const activity = await Activity.findOne({ userId, dayOfWeek });
 
+    if (!activity) {
+      return res.status(200).json({ calories: 0 });
+    }
 
-*/
+    // Prepare the activity data for the external API
+    const activityData = {
+      TotalSteps: activity.totalSteps,
+      VeryActiveMinutes: activity.veryActiveMinutes,
+      FairlyActiveMinutes: activity.fairlyActiveMinutes,
+      LightlyActiveMinutes: activity.lightlyActiveMinutes,
+      SedentaryMinutes: activity.sedentaryMinutes,
+    };
 
+    // Define the target API URL
+    const targetApiUrl = "https://calories.pythonanywhere.com/predict";
 
+    // Send the data to the target API and capture response
+    const response = await axios.post(targetApiUrl, activityData);
+    console.log("Response from the target API:", response.data);
 
+    // Assuming the response contains calories field
+    const calories = response.data.calories; // Adjust according to actual response structure
+
+    // Return the calories to the client
+    res.status(200).json({ calories });
+  } catch (err) {
+    console.error("Error fetching or sending activity data:", err); // Log the error
+    res.status(500).json({
+      message: "Failed to get calories",
+      error: err.message,
+    });
+  }
+};
 
 module.exports = {
   createExercise,
@@ -349,5 +469,7 @@ module.exports = {
   createOrUpdateDayDistance,
   getAllDayDistances,
   createActivity,
-  getAllActivities
+  getAllActivities,
+  sendAllActivitiesToAnotherAPI,
+  getCalories,
 };

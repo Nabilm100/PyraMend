@@ -1,9 +1,9 @@
-//services/workout.services.js
+// services/workout.services.js
 
 const Workout = require("../models/workout.model");
 const Exercise = require("../models/exercise.model");
 
-async function addWorkout(exercises, date) {
+async function addWorkout(userId, exercises, date) {
   // Ensure no duplicate exercises in the workout
   const uniqueExercises = [...new Set(exercises)];
   if (uniqueExercises.length !== exercises.length) {
@@ -17,8 +17,9 @@ async function addWorkout(exercises, date) {
     throw new Error("Some exercises do not exist");
   }
 
-  // Check for duplicate workout with the same exercises and date
+  // Check for duplicate workout with the same exercises and date for the same user
   const existingWorkout = await Workout.findOne({
+    user: userId,
     exercises: { $all: uniqueExercises, $size: uniqueExercises.length },
     date,
   });
@@ -26,16 +27,20 @@ async function addWorkout(exercises, date) {
     throw new Error("Duplicate workout found");
   }
 
-  const workout = new Workout({ exercises: uniqueExercises, date });
+  const workout = new Workout({
+    user: userId,
+    exercises: uniqueExercises,
+    date,
+  });
   return await workout.save();
 }
 
-async function getWorkoutsForDate(date) {
-  return await Workout.find({ date });
+async function getWorkoutsForDate(userId, date) {
+  return await Workout.find({ user: userId, date });
 }
 
-async function getAllWorkouts() {
-  return await Workout.find();
+async function getAllWorkouts(userId) {
+  return await Workout.find({ user: userId });
 }
 
 module.exports = {

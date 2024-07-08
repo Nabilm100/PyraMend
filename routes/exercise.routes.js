@@ -32,12 +32,19 @@ router.get("/exercises/:id/repeats", exerciseController.getExerciseRepetitions);
 router.put("/exercises/:id/repeats", exerciseController.setExerciseRepetitions);
 
 //analysis steps to distance in km
-router.post("/dayDistance",exerciseController.createOrUpdateDayDistance);
-router.get("/dayDistance",exerciseController.getAllDayDistances);
+router.post("/dayDistance", exerciseController.createOrUpdateDayDistance);
+router.get("/dayDistance", exerciseController.getAllDayDistances);
 
 //analysis steps to minutes
-router.post("/activity",exerciseController.createActivity);
-router.get("/activity",exerciseController.getAllActivities);
+router.post("/activity", exerciseController.createActivity);
+router.get("/activity", exerciseController.getAllActivities);
+// test the ML API
+router.post(
+  "/send-activities",
+  exerciseController.sendAllActivitiesToAnotherAPI
+);
+// get calories of user in a certain dayofweek
+router.get("/get-calories", exerciseController.getCalories);
 
 // Route to fetch exercises by body part and save them to the database
 router.get("/exercises/fetch/:bodyPart", async (req, res) => {
